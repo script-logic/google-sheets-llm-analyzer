@@ -17,7 +17,8 @@ def print_usage():
     print("\nПримеры:")
     print("  python encode_credentials.py credentials/service-account.json")
     print(
-        "  python encode_credentials.py ~/Downloads/my-project-credentials.json"
+        "  python encode_credentials.py"
+        " ~/Downloads/my-project-credentials.json"
     )
     print("\nКак получить JSON файл:")
     print("  1. Перейдите в Google Cloud Console")
@@ -47,7 +48,8 @@ def validate_json(data: dict) -> bool:
     # Проверяем тип
     if data.get("type") != "service_account":
         print(
-            f"❌ Неверный тип: {data.get('type')} (ожидается 'service_account')"
+            f"❌ Неверный тип: {data.get('type')} (ожидается"
+            " 'service_account')"
         )
         return False
 
@@ -65,18 +67,23 @@ def main():
     # Проверяем существование файла
     if not json_path.exists():
         print(f"❌ Файл не найден: {json_path}")
-        print(f"   Проверьте путь к файлу")
+        print("   Проверьте путь к файлу")
         sys.exit(1)
 
     # Проверяем расширение
     if json_path.suffix.lower() != ".json":
         print(
-            f"⚠️  Предупреждение: файл имеет расширение {json_path.suffix}, ожидается .json"
+            f"⚠️  Предупреждение: файл имеет расширение {json_path.suffix},"
+            " ожидается .json"  # fmt: off
         )
 
     try:
         # Читаем и парсим JSON
-        with open(json_path, "r", encoding="utf-8") as f:
+        with open(
+            json_path,
+            "r",
+            encoding="utf-8",
+        ) as f:
             json_data = json.load(f)
 
         # Валидируем JSON
@@ -85,7 +92,10 @@ def main():
             sys.exit(1)
 
         # Преобразуем JSON в строку (минифицированную)
-        json_str = json.dumps(json_data, separators=(",", ":"))
+        json_str = json.dumps(
+            json_data,
+            separators=(",", ":"),
+        )
 
         # Кодируем в base64
         base64_str = base64.b64encode(json_str.encode("utf-8")).decode("ascii")
@@ -95,12 +105,11 @@ def main():
         print("✅ GOOGLE_CREDENTIALS_BASE64 успешно сгенерирован!")
         print("=" * 70)
 
-        print(f"\n📋 Информация о Service Account:")
+        print("\n📋 Информация о Service Account:")
         print(f"   Project: {json_data.get('project_id', 'Не указан')}")
         print(f"   Client Email: {json_data.get('client_email', 'Не указан')}")
-        print(
-            f"   Key ID: {json_data.get('private_key_id', 'Не указан')[:20]}..."
-        )
+        print(f"   Key ID: {json_data.get('private_key_id',
+                                          'Не указан')[:20]}...")
 
         print(f"\n📏 Длина Base64 строки: {len(base64_str)} символов")
 
@@ -123,7 +132,8 @@ def main():
         try:
             decoded = base64.b64decode(base64_str).decode("utf-8")
             decoded_json = json.loads(decoded)
-            print("✅ Base64 успешно декодируется в валидный JSON")
+            if decoded_json:
+                print("✅ Base64 успешно декодируется в валидный JSON")
         except Exception as e:
             print(f"❌ Ошибка при проверке: {e}")
 
@@ -134,7 +144,7 @@ def main():
         print("   Убедитесь, что файл содержит валидный JSON")
         sys.exit(1)
     except UnicodeDecodeError:
-        print(f"❌ Ошибка кодирования файла")
+        print("❌ Ошибка кодирования файла")
         print("   Убедитесь, что файл в кодировке UTF-8")
         sys.exit(1)
     except Exception as e:

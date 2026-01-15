@@ -11,7 +11,6 @@ from typing import Optional
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich.syntax import Syntax
 from rich.table import Table
 
 from config import config
@@ -168,12 +167,14 @@ def print_statistics(result, llm_results: Optional[list] = None):
                 # Описание и рекомендация
                 if analysis.summary:
                     console.print(
-                        f"   [dim]📝 Суть:[/dim] [italic]{analysis.summary}[/italic]"
+                        "   [dim]📝 Суть:[/dim]"
+                        f" [italic]{analysis.summary}[/italic]"
                     )
 
                 if analysis.recommendation:
                     console.print(
-                        f"   [dim]💡 Рекомендация:[/dim] {analysis.recommendation}"
+                        "   [dim]💡 Рекомендация:[/dim]"
+                        f" {analysis.recommendation}"
                     )
 
                 console.print()  # Пустая строка между заявками
@@ -341,9 +342,10 @@ def main():
         # Итог
         console.print(
             Panel.fit(
-                f"[green]✅ Анализ завершен успешно![/green]\n"
+                "[green]✅ Анализ завершен успешно![/green]\n"
                 f"Обработано заявок: {result.total_requests}\n"
-                f"LLM анализ: {'✅ Включен' if args.llm and llm_results else '❌ Отключен'}",
+                "LLM анализ:"
+                f"{'✅ Включен' if args.llm and llm_results else '❌ Отключен'}",
                 border_style="green",
             )
         )

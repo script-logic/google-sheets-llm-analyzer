@@ -125,7 +125,7 @@ class DataAnalyzer:
         Returns:
             Список словарей с данными заявок
         """
-        requests = []
+        requests: List = []
 
         if len(data) <= 1:
             return requests
@@ -155,7 +155,8 @@ class DataAnalyzer:
 
         if requests:
             print(
-                f"✅ Найдено {len(requests)} заявок с описанием для анализа LLM"
+                f"✅ Найдено {len(requests)} заявок с описанием для"
+                " анализа LLM"
             )
         else:
             print("ℹ️  Не найдено заявок с описанием для анализа LLM")

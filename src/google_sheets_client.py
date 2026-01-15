@@ -3,7 +3,7 @@
 """
 
 import json
-from typing import Any, List, Optional
+from typing import Any, List
 
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -95,11 +95,12 @@ class GoogleSheetsClient:
 
             if e.resp.status == 404:
                 raise GoogleSheetsError(
-                    f"Таблица не найдена. Проверьте SPREADSHEET_ID: {error_msg}"
+                    "Таблица не найдена. Проверьте SPREADSHEET_ID:"
+                    f" {error_msg}"
                 )
             elif e.resp.status == 403:
                 raise GoogleSheetsError(
-                    f"Нет доступа к таблице. Убедитесь, что "
+                    "Нет доступа к таблице. Убедитесь, что "
                     f"'{config.google_credentials.get_client_email()}' "
                     f"имеет доступ к таблице. Ошибка: {error_msg}"
                 )
@@ -133,7 +134,7 @@ class GoogleSheetsClient:
                 for sheet in sheets
             ]
 
-            print(f"✅ Подключение успешно!")
+            print("✅ Подключение успешно!")
             print(f"   Таблица: '{title}'")
             print(f"   Доступные листы: {', '.join(sheet_names)}")
             print(f"   Ищем лист: '{self.config.sheet_name}'")
@@ -155,11 +156,12 @@ class GoogleSheetsClient:
 
         except HttpError as e:
             if e.resp.status == 404:
-                print(f"❌ Таблица не найдена. Проверьте SPREADSHEET_ID")
+                print("❌ Таблица не найдена. Проверьте SPREADSHEET_ID")
             elif e.resp.status == 403:
-                print(f"❌ Нет доступа к таблице")
+                print("❌ Нет доступа к таблице")
                 print(
-                    f"   Предоставьте доступ для: {config.google_credentials.get_client_email()}"
+                    "   Предоставьте доступ для:"
+                    f" {config.google_credentials.get_client_email()}"
                 )
             else:
                 print(f"❌ Ошибка подключения: {e}")
@@ -210,10 +212,11 @@ class CSVReader:
                     reader = csv.reader(file)
                     data = list(reader)
                 print(
-                    f"✅ Загружено {len(data)} строк из CSV-файла (кодировка cp1251)"
+                    f"✅ Загружено {len(data)} строк из CSV-файла (кодировка"
+                    " cp1251)"
                 )
                 return data
-            except:
+            except ValueError:
                 raise ValueError(
                     f"Не удалось прочитать файл {filepath}. "
                     "Проверьте кодировку файла."

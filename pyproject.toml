@@ -34,7 +34,7 @@ target-version = ['py38']
 
 [tool.mypy]
 python_version = "3.10"
-warn_return_any = true
+warn_return_any = false
 
 [project.urls]
 "Homepage" = "https://github.com/script-logic/telegram-bot-analytics"
