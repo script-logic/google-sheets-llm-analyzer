@@ -26,11 +26,11 @@ class GoogleSheetsClient:
                 "Конфигурация не загружена. Проверьте .env файл."
             )
 
-        self.config = config.google_sheets
+        self.config = config
         self._service = None
 
         try:
-            self.credentials = config.google_credentials.get_credentials()
+            self.credentials = config.get_google_credentials()
         except Exception as e:
             raise GoogleSheetsError(f"Ошибка загрузки credentials: {e}")
 
@@ -87,6 +87,7 @@ class GoogleSheetsClient:
                 return []
 
             print(f"✅ Загружено {len(values)} строк из Google Таблицы")
+
             return values
 
         except HttpError as e:
@@ -101,7 +102,7 @@ class GoogleSheetsClient:
             elif e.resp.status == 403:
                 raise GoogleSheetsError(
                     "Нет доступа к таблице. Убедитесь, что "
-                    f"'{config.google_credentials.get_client_email()}' "
+                    f"'{config.get_service_email()}' "
                     f"имеет доступ к таблице. Ошибка: {error_msg}"
                 )
             else:
@@ -161,7 +162,7 @@ class GoogleSheetsClient:
                 print("❌ Нет доступа к таблице")
                 print(
                     "   Предоставьте доступ для:"
-                    f" {config.google_credentials.get_client_email()}"
+                    f" {config.get_service_email()}"
                 )
             else:
                 print(f"❌ Ошибка подключения: {e}")

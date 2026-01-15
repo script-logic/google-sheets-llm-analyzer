@@ -48,14 +48,14 @@ def print_config_summary():
     info_table.add_column("Параметр", style="cyan")
     info_table.add_column("Значение", style="green")
 
+    info_table.add_row("Google Таблица", config.spreadsheet_id[:30] + "...")
+    info_table.add_row("Лист", config.sheet_name)
     info_table.add_row(
-        "Google Таблица", config.google_sheets.spreadsheet_id[:30] + "..."
+        "Столбец категорий", f"Столбец {config.category_column}"
     )
-    info_table.add_row("Лист", config.google_sheets.sheet_name)
     info_table.add_row(
-        "Столбец категорий", f"Столбец {config.google_sheets.category_column}"
+        "LLM", "Включен" if config.is_llm_enabled else "Выключен"
     )
-    info_table.add_row("LLM", "Включен" if config.llm.enabled else "Выключен")
     info_table.add_row("Режим отладки", "Да" if config.debug else "Нет")
 
     console.print(info_table)
@@ -313,14 +313,12 @@ def main():
             console.print()
 
         # Анализируем данные
-        analyzer = DataAnalyzer(
-            category_column=config.google_sheets.category_column
-        )
+        analyzer = DataAnalyzer(category_column=config.category_column)
         result = analyzer.analyze(data)
 
         # Анализ LLM
         llm_results = None
-        if args.llm and config.llm.enabled:
+        if args.llm and config.is_llm_enabled:
             with console.status("[bold green]Анализ LLM...[/bold green]"):
                 try:
                     llm_processor = LLMProcessor()

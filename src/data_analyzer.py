@@ -138,8 +138,7 @@ class DataAnalyzer:
                 "id": row[0] if len(row) > 0 and row[0] else str(i),
                 "date": row[1] if len(row) > 1 else "",
                 "category": row[2] if len(row) > 2 else "",
-                "choice": row[3] if len(row) > 3 else "",
-                "description": row[4] if len(row) > 4 else "",
+                "choice": row[3] if len(row) > 3 else ""
             }
 
             # Очищаем строковые значения
@@ -150,7 +149,7 @@ class DataAnalyzer:
                     request_data[key] = ""
 
             # Добавляем только если есть описание
-            if request_data["description"]:
+            if request_data["choice"]:
                 requests.append(request_data)
 
         if requests:

@@ -43,9 +43,9 @@ class LLMProcessor:
         if config is None:
             raise ValueError("Конфигурация не загружена")
 
-        self.config = config.llm
+        self.config = config
 
-        if not self.config.enabled:
+        if not self.config.is_llm_enabled:
             self.client = None
             self._enabled = False
             return
@@ -54,11 +54,11 @@ class LLMProcessor:
 
         try:
             self.client = OpenAI(
-                base_url=self.config.base_url,
-                api_key=self.config.api_key,
+                base_url=self.config.openrouter_base_url,
+                api_key=self.config.openrouter_api_key.get_secret_value(),
                 timeout=30.0,
                 max_retries=2,
-            )
+            )   
         except Exception as e:
             print(f"⚠️  Ошибка инициализации LLM клиента: {e}")
             self.client = None
@@ -68,13 +68,13 @@ class LLMProcessor:
         return self._enabled and self.client is not None
 
     def analyze_request(
-        self, description: str, category: str = ""
+        self, choice: str, category: str = ""
     ) -> Optional[LLMAnalysis]:
         """
         Анализирует описание заявки с помощью LLM.
 
         Args:
-            description: Текст заявки
+            choice: Текст заявки
             category: Категория заявки
 
         Returns:
@@ -83,7 +83,7 @@ class LLMProcessor:
         if not self.is_available():
             return None
 
-        if not description or len(description.strip()) < 5:
+        if not choice or len(choice.strip()) < 5:
             return None
 
         start_time = time.time()
@@ -116,12 +116,12 @@ class LLMProcessor:
             Категория: {category if category else 'Не указана'}
 
             Описание проблемы:
-            {description}
+            {choice}
 
             Проанализируй эту заявку согласно инструкциям выше."""
 
             response = self.client.chat.completions.create(
-                model=self.config.model,
+                model=self.config.openrouter_model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
@@ -130,7 +130,7 @@ class LLMProcessor:
                 max_tokens=500,
                 response_format={"type": "json_object"},
             )
-
+            print("Проанализирована заявка... Ищу следующую...")
             # Парсим JSON-ответ
             content = response.choices[0].message.content
             result = json.loads(content)
@@ -191,7 +191,7 @@ class LLMProcessor:
             print(f"   Анализ заявки {i}/{total_requests}...", end="\r")
 
             analysis = self.analyze_request(
-                description=request.get("description", ""),
+                choice=request.get("choice", ""),
                 category=request.get("category", ""),
             )
 
@@ -225,7 +225,7 @@ class LLMProcessor:
         try:
             # Простой запрос для проверки подключения
             response = self.client.chat.completions.create(
-                model=self.config.model,
+                model=self.config.openrouter_model,
                 messages=[
                     {
                         "role": "user",
@@ -237,7 +237,7 @@ class LLMProcessor:
             )
 
             result = response.choices[0].message.content.strip()
-            print(f"✅ Подключение к LLM успешно ({self.config.model})")
+            print(f"✅ Подключение к LLM успешно ({self.config.openrouter_model})")
             print(f"   Ответ: {result}")
             return True
 

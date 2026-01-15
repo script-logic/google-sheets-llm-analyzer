@@ -3,160 +3,143 @@ import json
 from functools import lru_cache
 
 from google.oauth2.service_account import Credentials
-from pydantic import (
-    BaseModel,
-    Field,
-    SecretStr,
-    field_validator,
-)
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class GoogleSheetsConfig(BaseModel):
-    """Конфигурация Google Sheets."""
+class AppConfig(BaseSettings):
+    """
+    Единый класс конфигурации.
+    Читает ПЛОСКИЙ .env файл и валидирует данные.
+    """
 
+    # --- GOOGLE SHEETS SETTINGS ---
     spreadsheet_id: str = Field(
         ...,
-        validation_alias="SPREADSHEET_ID",  # Связывает переменную из .env
+        validation_alias="SPREADSHEET_ID",
         description="ID Google Таблицы",
         min_length=10,
     )
 
     sheet_name: str = Field(
-        "Заявки из Telegram Bot",
-        validation_alias="SHEET_NAME",
-        description="Имя листа в таблице",
+        "Заявки из Telegram Bot", validation_alias="SHEET_NAME"
     )
 
     category_column: int = Field(
-        3,
-        validation_alias="CATEGORY_COLUMN",
-        ge=1,
-        le=26,
+        3, validation_alias="CATEGORY_COLUMN", ge=1, le=26
     )
 
-    @field_validator("spreadsheet_id")
-    @classmethod
-    def validate_id(cls, v: str) -> str:
-        if "ваш_id" in v:
-            raise ValueError("Не настроен SPREADSHEET_ID в .env файле")
-        return v.strip()
-
-
-class LLMConfig(BaseModel):
-    """Конфигурация OpenRouter/OpenAI."""
-
-    api_key: SecretStr = Field(
-        SecretStr(""),  # Пустой секрет по умолчанию
-        validation_alias="OPENROUTER_API_KEY",
-    )
-
-    base_url: str = Field(
-        "https://openrouter.ai/api/v1", validation_alias="OPENROUTER_BASE_URL"
-    )
-
-    model: str = Field(
-        "openai/gpt-3.5-turbo", validation_alias="OPENROUTER_MODEL"
-    )
-
-    @property
-    def is_enabled(self) -> bool:
-        """Проверка, задан ли корректный ключ."""
-        token = self.api_key.get_secret_value()
-        return bool(token and "ваш_api_ключ" not in token)
-
-
-class GoogleCredentials(BaseModel):
-    """Данные сервисного аккаунта."""
-
-    # SecretStr скрывает содержимое при печати объекта (****)
-    credentials_base64: SecretStr = Field(
+    # --- GOOGLE CREDENTIALS ---
+    # SecretStr скрывает значение при выводе в консоль (показывает '**********')
+    google_credentials_base64: SecretStr = Field(
         ..., validation_alias="GOOGLE_CREDENTIALS_BASE64", min_length=50
     )
 
-    @field_validator("credentials_base64")
-    @classmethod
-    def validate_base64_content(cls, v: SecretStr) -> SecretStr:
-        val = v.get_secret_value()
-        if "ваш_base64" in val:
-            raise ValueError("GOOGLE_CREDENTIALS_BASE64 не настроен")
+    # --- OPENROUTER / LLM ---
+    openrouter_api_key: SecretStr = Field(
+        SecretStr(""),  # Пустая строка по умолчанию, если ключа нет
+        validation_alias="OPENROUTER_API_KEY",
+    )
 
+    openrouter_base_url: str = Field(
+        "https://openrouter.ai/api/v1", validation_alias="OPENROUTER_BASE_URL"
+    )
+
+    openrouter_model: str = Field(
+        "openai/gpt-3.5-turbo", validation_alias="OPENROUTER_MODEL"
+    )
+
+    # --- APP SETTINGS ---
+    debug: bool = Field(False, validation_alias="DEBUG")
+
+    # --- НАСТРОЙКИ PYDANTIC ---
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",  # Игнорировать лишние переменные в .env
+        case_sensitive=False,
+    )
+
+    # --- ВАЛИДАТОРЫ ---
+
+    @field_validator("spreadsheet_id")
+    @classmethod
+    def validate_spreadsheet_id(cls, v: str) -> str:
+        if "ваш_id" in v:
+            raise ValueError("SPREADSHEET_ID не заполнен в .env файле")
+        return v.strip()
+
+    @field_validator("google_credentials_base64")
+    @classmethod
+    def validate_creds(cls, v: SecretStr) -> SecretStr:
+        val = v.get_secret_value()
+        if not val or "ваш_base64" in val:
+            raise ValueError("GOOGLE_CREDENTIALS_BASE64 не заполнен")
+
+        # Предварительная проверка валидности Base64 и JSON
         try:
-            decoded = base64.b64decode(val, validate=True).decode("utf-8")
+            decoded = base64.b64decode(val, validate=True)
             data = json.loads(decoded)
 
-            if data.get("type") != "service_account":
-                raise ValueError("JSON не является service_account")
-            if "private_key" not in data:
-                raise ValueError("В JSON отсутствует private_key")
+            required = ["type", "project_id", "private_key", "client_email"]
+            if any(f not in data for f in required):
+                raise ValueError(
+                    f"JSON ключа не содержит обязательных полей: {required}"
+                )
 
         except Exception as e:
-            raise ValueError(f"Ошибка декодирования Credentials: {e}")
+            raise ValueError(f"Ошибка декодирования Base64 ключа: {e}")
 
         return v
 
-    def get_creds_object(self) -> Credentials:
+    # --- ПОЛЕЗНЫЕ МЕТОДЫ (HELPER METHODS) ---
+
+    @property
+    def is_llm_enabled(self) -> bool:
+        """Включен ли ИИ?"""
+        key = self.openrouter_api_key.get_secret_value()
+        return bool(key and "ваш_api_ключ" not in key)
+
+    def get_google_credentials(self) -> Credentials:
         """Возвращает готовый объект авторизации Google."""
         json_data = json.loads(
-            base64.b64decode(self.credentials_base64.get_secret_value())
+            base64.b64decode(self.google_credentials_base64.get_secret_value())
         )
         return Credentials.from_service_account_info(
             json_data,
             scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
         )
 
-    @property
-    def service_email(self) -> str:
-        """Извлекает email без полной десериализации (для логов)."""
+    def get_service_email(self) -> str:
+        """Получить email сервисного аккаунта для логов."""
         try:
-            # Парсим "на лету", так как это свойство вызывается редко
-            data = json.loads(
-                base64.b64decode(self.credentials_base64.get_secret_value())
+            creds = json.loads(
+                base64.b64decode(
+                    self.google_credentials_base64.get_secret_value()
+                )
             )
-            return data.get("client_email", "unknown")
-        except Exception:
-            return "invalid_token"
-
-
-class AppConfig(BaseSettings):
-    """Корневая конфигурация."""
-
-    # Вложенные модели
-    google_sheets: GoogleSheetsConfig = Field(default_factory=dict)  # type: ignore
-    google_credentials: GoogleCredentials = Field(default_factory=dict)  # type: ignore
-    llm: LLMConfig = Field(default_factory=dict)  # type: ignore
-
-    debug: bool = Field(False, validation_alias="DEBUG")
-
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore",
-        case_sensitive=False,
-    )
+            return creds.get("client_email", "unknown")
+        except:
+            return "error"
 
 
 @lru_cache
 def get_settings() -> AppConfig:
     """
-    Singleton для загрузки настроек.
-    Загружает один раз при первом вызове.
+    Создает конфигурацию один раз и кэширует её (Singleton).
     """
     try:
         config = AppConfig()
 
-        # Небольшой лог при старте (можно убрать в продакшене)
         if config.debug:
-            print(
-                "🔧 Config loaded. SheetID:"
-                f" ...{config.google_sheets.spreadsheet_id[-5:]}"
-            )
-            print(f"🤖 LLM Enabled: {config.llm.is_enabled}")
-            print(f"📧 Service Acc: {config.google_credentials.service_email}")
+            print(f"✅ Config loaded from .env")
+            print(f"   Spreadsheet: ...{config.spreadsheet_id[-5:]}")
+            print(f"   Service Email: {config.get_service_email()}")
 
         return config
     except Exception as e:
-        print(f"🔥 Critical Error loading .env: {e}")
+        print(f"❌ Ошибка загрузки .env конфигурации: {e}")
+        # Перевыбрасываем ошибку, чтобы приложение остановилось
         raise
 
 
