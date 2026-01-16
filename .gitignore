@@ -10,6 +10,7 @@ credentials/
 
 # Python
 __pycache__/
+.mypy_cache
 *.py[cod]
 *$py.class
 *.so

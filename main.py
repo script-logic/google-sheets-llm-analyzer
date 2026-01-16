@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+from rich.box import ROUNDED
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -27,11 +28,18 @@ console = Console()
 
 def print_banner():
     """Выводит баннер приложения."""
-    banner = """
-    🤖 Telegram Bot Analytics v1.0
-    📊 Анализ заявок · Google Sheets · AI Анализ
-    """
-    console.print(Panel(banner, style="bold blue"))
+    banner = "\n".join(
+        [
+            "📊 Telegram Bot Analytics",
+            "🔗 Интеграция с Google Sheets",
+            "💡 Статистический анализ заявок",
+            "🤖 AI Анализ",
+        ]
+    )
+    console.print(
+        Panel("", subtitle=banner, expand=True, style="bold blue"),
+        justify="full",
+    )
 
 
 def print_config_summary():
@@ -48,13 +56,13 @@ def print_config_summary():
     info_table.add_column("Параметр", style="cyan")
     info_table.add_column("Значение", style="green")
 
-    info_table.add_row("Google Таблица", config.spreadsheet_id[:30] + "...")
+    info_table.add_row("Google Таблица", config.spreadsheet_id)
     info_table.add_row("Лист", config.sheet_name)
     info_table.add_row(
         "Столбец категорий", f"Столбец {config.category_column}"
     )
     info_table.add_row(
-        "LLM", "Включен" if config.is_llm_enabled else "Выключен"
+        "LLM ключ", "Введён" if config.is_llm_enabled else "Не введён"
     )
     info_table.add_row("Режим отладки", "Да" if config.debug else "Нет")
 
@@ -79,12 +87,15 @@ def print_statistics(result, llm_results: Optional[list] = None):
         )
         return
 
-    # Основная статистика
     console.print(
-        Panel("[bold]📈 Статистика заявок[/bold]", border_style="magenta")
+        Panel(
+            "[bold]📈 Статистика заявок[/bold]",
+            expand=False,
+            border_style="magenta",
+        )
     )
 
-    stats_table = Table(show_header=True, header_style="bold")
+    stats_table = Table(show_header=True, box=ROUNDED)
     stats_table.add_column("Категория", style="cyan", no_wrap=True)
     stats_table.add_column("Количество", justify="right", style="green")
     stats_table.add_column("Процент", justify="right", style="yellow")
@@ -97,14 +108,12 @@ def print_statistics(result, llm_results: Optional[list] = None):
 
     console.print(stats_table)
 
-    # Итоговая информация
     console.print()
-    summary_table = Table(show_header=False, box=None)
+    summary_table = Table(show_header=False, box=None, expand=False)
     summary_table.add_column("Метрика", style="cyan")
     summary_table.add_column("Значение", style="green")
 
     summary_table.add_row("Всего заявок", str(result.total_requests))
-    summary_table.add_row("Всего строк в таблице", str(result.total_rows))
     summary_table.add_row(
         "Уникальных категорий", str(len(result.category_counts))
     )
@@ -117,7 +126,7 @@ def print_statistics(result, llm_results: Optional[list] = None):
             f"({result.most_common_count} заявок, {percentage:.1f}%)",
         )
 
-    console.print(Panel(summary_table, border_style="green"))
+    console.print(Panel(summary_table, border_style="green", expand=False))
 
     # Анализ LLM
     if llm_results:
@@ -128,7 +137,6 @@ def print_statistics(result, llm_results: Optional[list] = None):
             if "llm_analysis" in request and request["llm_analysis"]:
                 analysis = request["llm_analysis"]
 
-                # Определяем стиль по приоритету
                 priority_styles = {
                     "high": ("🔴", "bold red"),
                     "medium": ("🟡", "bold yellow"),
@@ -139,14 +147,14 @@ def print_statistics(result, llm_results: Optional[list] = None):
                     analysis.priority, ("⚪", "bold white")
                 )
 
-                # Заголовок заявки
                 console.print(
                     f"{emoji} [bold]Заявка #{request['row_number']}[/bold] "
                     f"(ID: {request['id']})"
                 )
 
-                # Детали
-                details = Table(show_header=False, box=None, padding=(0, 2))
+                details = Table(
+                    show_header=False, box=None, padding=(0, 2), expand=False
+                )
                 details.add_column("Поле", style="dim")
                 details.add_column("Значение", style="white")
 
@@ -164,7 +172,6 @@ def print_statistics(result, llm_results: Optional[list] = None):
 
                 console.print(details)
 
-                # Описание и рекомендация
                 if analysis.summary:
                     console.print(
                         "   [dim]📝 Суть:[/dim]"
@@ -177,7 +184,7 @@ def print_statistics(result, llm_results: Optional[list] = None):
                         f" {analysis.recommendation}"
                     )
 
-                console.print()  # Пустая строка между заявками
+                console.print()
 
         console.print(
             f"[dim]Всего проанализировано заявок: {len(llm_results)}[/dim]"
@@ -189,17 +196,18 @@ def main():
     parser = argparse.ArgumentParser(
         description="Анализ заявок из Telegram-бота с Google Sheets и LLM",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Примеры использования:
-  %(prog)s --api                    # Анализ через Google Sheets API
-  %(prog)s --api --llm              # Анализ через API + LLM
-  %(prog)s --csv data.csv           # Анализ из CSV файла
-  %(prog)s --api --test             # Только тест подключения
-  %(prog)s --api --llm --debug      # С отладкой
-        """,
+        epilog="\n".join(
+            [
+                "Примеры использования:",
+                "  %(prog)s --api                # Анализ Google Sheets API",
+                "  %(prog)s --api --llm          # Анализ через API + LLM",
+                "  %(prog)s --csv data.csv       # Анализ из CSV файла",
+                "  %(prog)s --api --test         # Только тест подключения",
+                "  %(prog)s --api --llm --debug  # С отладкой",
+            ]
+        ),
     )
 
-    # Источник данных
     source_group = parser.add_mutually_exclusive_group(required=True)
     source_group.add_argument(
         "--api", action="store_true", help="Использовать Google Sheets API"
@@ -208,7 +216,6 @@ def main():
         "--csv", type=str, metavar="ФАЙЛ", help="Использовать CSV-файл"
     )
 
-    # Дополнительные опции
     parser.add_argument(
         "--llm", action="store_true", help="Включить анализ LLM"
     )
@@ -224,24 +231,20 @@ def main():
 
     args = parser.parse_args()
 
-    # Проверяем конфигурацию
     if config is None:
         console.print("[red]❌ Ошибка: Конфигурация не загружена[/red]")
         console.print("Проверьте наличие и корректность .env файла")
         sys.exit(1)
 
-    # Выводим баннер и конфигурацию
     print_banner()
     print_config_summary()
 
-    # Тестовый режим
     if args.test:
         console.print(
             Panel("[bold]🔧 Тест подключения...[/bold]", border_style="yellow")
         )
 
         if args.api:
-            # Тест Google Sheets
             console.print("\n[bold]Testing Google Sheets...[/bold]")
             try:
                 client = GoogleSheetsClient()
@@ -252,7 +255,6 @@ def main():
             except Exception as e:
                 console.print(f"[red]❌ Google Sheets: {e}[/red]")
 
-        # Тест LLM
         console.print("\n[bold]Testing LLM...[/bold]")
         try:
             llm_processor = LLMProcessor()
@@ -266,7 +268,6 @@ def main():
 
     # Основной режим
     try:
-        # Получаем данные
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -275,7 +276,6 @@ def main():
             task = progress.add_task("Загрузка данных...", total=None)
 
             if args.api:
-                # Используем Google Sheets API
                 try:
                     client = GoogleSheetsClient()
                     data = client.fetch_data()
@@ -285,7 +285,7 @@ def main():
                         console.print_exception()
                     sys.exit(1)
             else:
-                # Используем CSV
+                # Либо используем файл CSV
                 if not Path(args.csv).exists():
                     console.print(f"[red]❌ Файл не найден: {args.csv}[/red]")
                     sys.exit(1)
@@ -300,19 +300,16 @@ def main():
                 task, completed=100, description="✅ Данные загружены"
             )
 
-        # Показываем сырые данные (если нужно)
         if args.raw and args.debug and data:
             console.print(
                 Panel("[bold]📄 Сырые данные[/bold]", border_style="dim")
             )
-            for i, row in enumerate(data[:10]):  # Показываем первые 10 строк
+            for i, row in enumerate(data):
                 console.print(f"[dim]{i}:[/dim] {row}")
 
-            if len(data) > 10:
-                console.print(f"[dim]... и еще {len(data) - 10} строк[/dim]")
             console.print()
 
-        # Анализируем данные
+        # Анализируем статистику данных
         analyzer = DataAnalyzer(category_column=config.category_column)
         result = analyzer.analyze(data)
 
@@ -338,12 +335,16 @@ def main():
         print_statistics(result, llm_results)
 
         # Итог
+        llm_status = (
+            "✅ Включен"
+            if args.llm and llm_results
+            else "❌ Отключен\nВключить LLM: --llm"
+        )
         console.print(
             Panel.fit(
-                "[green]✅ Анализ завершен успешно![/green]\n"
+                f"[green]✅ Анализ завершен успешно![/green]\n"
                 f"Обработано заявок: {result.total_requests}\n"
-                "LLM анализ:"
-                f"{'✅ Включен' if args.llm and llm_results else '❌ Отключен'}",
+                f"LLM анализ: {llm_status}",
                 border_style="green",
             )
         )

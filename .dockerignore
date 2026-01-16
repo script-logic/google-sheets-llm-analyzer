@@ -1,0 +1,38 @@
+scripts
+mock_data.csv
+
+### standart
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.env.*
+.pytest_cache/
+.vscode/
+
+# Git
+.git
+.gitignore
+
+# Docker
+.dockerignore
+Dockerfile
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# IDEs
+.vscode/
+.idea/
+
+# OS-specific
+*.DS_Store
+Thumbs.db

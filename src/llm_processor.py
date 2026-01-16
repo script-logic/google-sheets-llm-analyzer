@@ -17,11 +17,11 @@ from config import config
 class LLMAnalysis:
     """Результат анализа LLM."""
 
-    priority: str  # "high", "medium", "low"
+    priority: str
     summary: str
     recommendation: str
-    raw_response: str
-    processing_time: float  # Время обработки в секундах
+    raw_response: str | None
+    processing_time: float
 
     @property
     def priority_emoji(self) -> str:
@@ -58,7 +58,7 @@ class LLMProcessor:
                 api_key=self.config.openrouter_api_key.get_secret_value(),
                 timeout=30.0,
                 max_retries=2,
-            )   
+            )
         except Exception as e:
             print(f"⚠️  Ошибка инициализации LLM клиента: {e}")
             self.client = None
@@ -89,53 +89,69 @@ class LLMProcessor:
         start_time = time.time()
 
         try:
-            # Системный промпт для анализа заявок
-            system_prompt = """Ты — опытный специалист технической поддержки.
-            Анализируй описание проблемы пользователя и предоставляй структурированный анализ.
+            # Системный промпт для анализа заявок.
+            # Захардкожен для возможности в дальнейшем
+            # формировать его динамически (с разными переменными)
+            system_prompt = """
+Ты — опытный специалист технической поддержки.
+Анализируй описание проблемы пользователя и предоставляй структурированный
+анализ.
 
-            Шаги анализа:
-            1. Определи приоритет заявки (high/medium/low) на основе:
-               - HIGH: критические проблемы (система не работает, потеря данных, угрозы безопасности)
-               - MEDIUM: важные проблемы с временным решением, вопросы по функционалу, ошибки в некритичных компонентах
-               - LOW: информационные запросы, вопросы по документации, предложения по улучшению
+Шаги анализа:
+1. Определи приоритет заявки (high/medium/low) на основе:
+    - HIGH: критические проблемы (система не работает, потеря данных, угрозы
+        безопасности)
+    - MEDIUM: важные проблемы с временным решением, вопросы по функционалу,
+    `   ошибки в некритичных компонентах
+    - LOW: информационные запросы, вопросы по документации, предложения по
+        улучшению
+2. Сформулируй краткую суть проблемы (1-2 предложения)
+3. Предложи рекомендацию по решению или следующий шаг
 
-            2. Сформулируй краткую суть проблемы (1-2 предложения)
-            3. Предложи рекомендацию по решению или следующий шаг
+Формат ответа - строго JSON:
+{
+    "priority": "high|medium|low",
+    "summary": "краткая суть проблемы на русском языке",
+    "recommendation": "конкретная рекомендация по решению на русском языке"
+}
 
-            Формат ответа - строго JSON:
-            {
-                "priority": "high|medium|low",
-                "summary": "краткая суть проблемы на русском языке",
-                "recommendation": "конкретная рекомендация по решению на русском языке"
-            }
+Будь конкретным в рекомендациях. Если проблема требует срочного решения,
+укажи это."""
 
-            Будь конкретным в рекомендациях. Если проблема требует срочного решения, укажи это."""
+            user_prompt = f"""
+Заявка пользователя:
 
-            user_prompt = f"""Заявка пользователя:
+[
+Категория:
+{category if category else 'Не указана'}
 
-            Категория: {category if category else 'Не указана'}
+Описание проблемы:
+{choice}
+]
 
-            Описание проблемы:
-            {choice}
+Проанализируй эту заявку согласно инструкциям выше."""
+            if self.client:
+                response = self.client.chat.completions.create(
+                    model=self.config.openrouter_model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    temperature=0.3,
+                    max_tokens=500,
+                    response_format={"type": "json_object"},
+                )
 
-            Проанализируй эту заявку согласно инструкциям выше."""
-
-            response = self.client.chat.completions.create(
-                model=self.config.openrouter_model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                temperature=0.3,
-                max_tokens=500,
-                response_format={"type": "json_object"},
-            )
-            print("Проанализирована заявка... Ищу следующую...")
-            # Парсим JSON-ответ
             content = response.choices[0].message.content
-            result = json.loads(content)
+
+            if content:
+                result = json.loads(content)
+
+            if not content:
+                raise Exception("LLM вернула пустой ответ")
 
             processing_time = time.time() - start_time
+            print("Анализирую следующую заявку...")
 
             return LLMAnalysis(
                 priority=result.get("priority", "medium").lower(),
@@ -148,7 +164,7 @@ class LLMProcessor:
         except json.JSONDecodeError as e:
             print(f"❌ LLM вернул невалидный JSON: {e}")
             if config and config.debug:
-                print(f"   Ответ LLM: {content[:200]}...")
+                print(f"   Ответ LLM: {content}")
             return None
         except RateLimitError:
             print("⚠️  Превышен лимит запросов к LLM API")
@@ -236,8 +252,10 @@ class LLMProcessor:
                 timeout=10.0,
             )
 
-            result = response.choices[0].message.content.strip()
-            print(f"✅ Подключение к LLM успешно ({self.config.openrouter_model})")
+            result = response.choices[0].message.content
+            print(
+                f"✅ Подключение к LLM успешно ({self.config.openrouter_model})"
+            )
             print(f"   Ответ: {result}")
             return True
 

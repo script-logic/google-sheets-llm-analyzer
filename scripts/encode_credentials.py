@@ -108,8 +108,10 @@ def main():
         print("\n📋 Информация о Service Account:")
         print(f"   Project: {json_data.get('project_id', 'Не указан')}")
         print(f"   Client Email: {json_data.get('client_email', 'Не указан')}")
-        print(f"   Key ID: {json_data.get('private_key_id',
-                                          'Не указан')[:20]}...")
+        print(
+            f"   Key ID: {json_data.get('private_key_id',
+                                        'Не указан')[:20]}..."
+        )
 
         print(f"\n📏 Длина Base64 строки: {len(base64_str)} символов")
 

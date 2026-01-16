@@ -1,28 +1,27 @@
+# Используем официальный образ Python
 FROM python:3.11-slim
 
+# Устанавливаем рабочий каталог
 WORKDIR /app
 
-# Устанавливаем системные зависимости
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+# Копируем только файл зависимостей для кэширования
+COPY pyproject.toml .
 
-# Копируем зависимости
-COPY pyproject.toml ./
-
-# Устанавливаем Python-зависимости
+# Устанавливаем зависимости Python
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
 
-# Копируем исходный код
-COPY . .
+# Создаем непривилегированного пользователя для безопасности
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
 
-# Создаем необходимые директории
-RUN mkdir -p /app/scripts
+# Копируем исходный код (после установки зависимостей для кэширования)
+COPY --chown=appuser:appuser . .
 
-# Указываем переменные окружения
+# Настройки среды
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
 # Команда по умолчанию
 CMD ["python", "main.py", "--api"]

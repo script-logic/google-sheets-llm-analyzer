@@ -65,10 +65,8 @@ class GoogleSheetsClient:
             service = self._get_service()
             sheet = service.spreadsheets()
 
-            # Определяем диапазон для чтения
             range_name = f"{self.config.sheet_name}!A:Z"
 
-            # Выполняем запрос
             result = (
                 sheet.values()
                 .get(

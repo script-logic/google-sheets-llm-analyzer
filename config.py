@@ -10,7 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class AppConfig(BaseSettings):
     """
     Единый класс конфигурации.
-    Читает ПЛОСКИЙ .env файл и валидирует данные.
+    Читает .env файл и валидирует данные.
     """
 
     # --- GOOGLE SHEETS SETTINGS ---
@@ -21,23 +21,20 @@ class AppConfig(BaseSettings):
         min_length=10,
     )
 
-    sheet_name: str = Field(
-        "Заявки из Telegram Bot", validation_alias="SHEET_NAME"
-    )
+    sheet_name: str = Field("Цвета и числа", validation_alias="SHEET_NAME")
 
     category_column: int = Field(
         3, validation_alias="CATEGORY_COLUMN", ge=1, le=26
     )
 
     # --- GOOGLE CREDENTIALS ---
-    # SecretStr скрывает значение при выводе в консоль (показывает '**********')
     google_credentials_base64: SecretStr = Field(
         ..., validation_alias="GOOGLE_CREDENTIALS_BASE64", min_length=50
     )
 
-    # --- OPENROUTER / LLM ---
+    # --- OPENROUTER ---
     openrouter_api_key: SecretStr = Field(
-        SecretStr(""),  # Пустая строка по умолчанию, если ключа нет
+        SecretStr(""),
         validation_alias="OPENROUTER_API_KEY",
     )
 
@@ -46,26 +43,25 @@ class AppConfig(BaseSettings):
     )
 
     openrouter_model: str = Field(
-        "openai/gpt-3.5-turbo", validation_alias="OPENROUTER_MODEL"
+        "mistralai/devstral-2512:free", validation_alias="OPENROUTER_MODEL"
     )
 
     # --- APP SETTINGS ---
     debug: bool = Field(False, validation_alias="DEBUG")
 
-    # --- НАСТРОЙКИ PYDANTIC ---
+    # --- PYDANTIC ---
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore",  # Игнорировать лишние переменные в .env
+        extra="ignore",
         case_sensitive=False,
     )
 
     # --- ВАЛИДАТОРЫ ---
-
     @field_validator("spreadsheet_id")
     @classmethod
     def validate_spreadsheet_id(cls, v: str) -> str:
-        if "ваш_id" in v:
+        if "ваш" in v:
             raise ValueError("SPREADSHEET_ID не заполнен в .env файле")
         return v.strip()
 
@@ -73,10 +69,10 @@ class AppConfig(BaseSettings):
     @classmethod
     def validate_creds(cls, v: SecretStr) -> SecretStr:
         val = v.get_secret_value()
-        if not val or "ваш_base64" in val:
+        if not val or "ваш" in val:
             raise ValueError("GOOGLE_CREDENTIALS_BASE64 не заполнен")
 
-        # Предварительная проверка валидности Base64 и JSON
+        # Проверка валидности Base64 и JSON
         try:
             decoded = base64.b64decode(val, validate=True)
             data = json.loads(decoded)
@@ -92,13 +88,12 @@ class AppConfig(BaseSettings):
 
         return v
 
-    # --- ПОЛЕЗНЫЕ МЕТОДЫ (HELPER METHODS) ---
-
+    # --- ПОЛЕЗНЫЕ МЕТОДЫ ---
     @property
     def is_llm_enabled(self) -> bool:
         """Включен ли ИИ?"""
         key = self.openrouter_api_key.get_secret_value()
-        return bool(key and "ваш_api_ключ" not in key)
+        return bool(key and "ваш" not in key)
 
     def get_google_credentials(self) -> Credentials:
         """Возвращает готовый объект авторизации Google."""
@@ -119,7 +114,7 @@ class AppConfig(BaseSettings):
                 )
             )
             return creds.get("client_email", "unknown")
-        except:
+        except Exception:
             return "error"
 
 
@@ -129,21 +124,17 @@ def get_settings() -> AppConfig:
     Создает конфигурацию один раз и кэширует её (Singleton).
     """
     try:
-        config = AppConfig()
+        config = AppConfig()  # type: ignore #TODO
 
         if config.debug:
-            print(f"✅ Config loaded from .env")
-            print(f"   Spreadsheet: ...{config.spreadsheet_id[-5:]}")
+            print("✅ Config loaded from .env")
+            print(f"   Spreadsheet: {config.spreadsheet_id}")
             print(f"   Service Email: {config.get_service_email()}")
 
         return config
     except Exception as e:
         print(f"❌ Ошибка загрузки .env конфигурации: {e}")
-        # Перевыбрасываем ошибку, чтобы приложение остановилось
         raise
 
 
-try:
-    config = get_settings()
-except Exception as e:
-    print(f"🔥🔧 Config error. {e}")
+config = get_settings()

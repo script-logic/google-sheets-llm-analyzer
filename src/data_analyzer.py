@@ -33,7 +33,7 @@ class AnalysisResult:
 
 
 class DataAnalyzer:
-    """Анализатор данных из таблицы."""
+    """Статистический анализатор данных из таблицы."""
 
     def __init__(self, category_column: int = 3):
         self.category_column = category_column
@@ -58,7 +58,6 @@ class DataAnalyzer:
                 raw_data=data,
             )
 
-        # Извлекаем категории
         categories = []
         skipped_rows = []
 
@@ -77,11 +76,7 @@ class DataAnalyzer:
             else:
                 skipped_rows.append(i)
 
-        # Логируем пропущенные строки
-        if (
-            skipped_rows and len(data) > 10
-        ):  # Логируем только для больших таблиц
-            print(f"⚠️  Пропущено {len(skipped_rows)} строк без категории")
+        print(f"⚠️  Пропущено {len(skipped_rows)} строк без категории")
 
         if not categories:
             return AnalysisResult(
@@ -93,10 +88,8 @@ class DataAnalyzer:
                 raw_data=data,
             )
 
-        # Подсчитываем категории
         category_counts = Counter(categories)
 
-        # Находим самую популярную категорию
         if category_counts:
             most_common_category, most_common_count = (
                 category_counts.most_common(1)[0]
@@ -130,21 +123,22 @@ class DataAnalyzer:
         if len(data) <= 1:
             return requests
 
-        # Структура таблицы (предполагаемая):
-        # A: Номер, B: Дата, C: Категория, D: Выбор, E: Описание
+        # Структура таблицы:
+        # A: Номер, B: Дата, C: Категория, D: Выбор
         for i, row in enumerate(data[1:], start=2):
             request_data = {
                 "row_number": i,
                 "id": row[0] if len(row) > 0 and row[0] else str(i),
                 "date": row[1] if len(row) > 1 else "",
                 "category": row[2] if len(row) > 2 else "",
-                "choice": row[3] if len(row) > 3 else ""
+                "choice": row[3] if len(row) > 3 else "",
             }
 
             # Очищаем строковые значения
             for key in request_data:
-                if isinstance(request_data[key], str):
-                    request_data[key] = request_data[key].strip()
+                str_clean = request_data[key]
+                if isinstance(str_clean, str):
+                    request_data[key] = str_clean.strip()
                 elif request_data[key] is None:
                     request_data[key] = ""
 
