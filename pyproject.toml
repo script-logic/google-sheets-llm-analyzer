@@ -17,6 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
+packages = [{include = "google_sheets_llm_analyzer_package"}]
 
 [tool.poetry.dependencies]
 python = ">=3.11"
@@ -59,7 +60,7 @@ exclude = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["google_sheets_llm_analyzer"]
+known-first-party = ["google_sheets_llm_analyzer_package"]
 
 [tool.mypy]
 python_version = "3.11"

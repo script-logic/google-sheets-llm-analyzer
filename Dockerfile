@@ -2,7 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY pyproject.toml .
+COPY pyproject.toml README.md ./
+COPY google_sheets_llm_analyzer_package/ ./google_sheets_llm_analyzer_package/
 
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
@@ -12,8 +13,7 @@ USER appuser
 
 COPY --chown=appuser:appuser . .
 
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1 
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Default

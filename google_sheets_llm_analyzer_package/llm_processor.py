@@ -15,7 +15,7 @@ from openai import (
     RateLimitError,
 )
 
-from src.config import config
+from google_sheets_llm_analyzer_package.config import config
 
 
 @dataclass

@@ -283,9 +283,9 @@ poetry run mypy .
 ## 📁 Project Structure
 ```
 google_sheets_llm_analyzer/              
-├── main.py                      # Main script
-├── src/                         # Source code
-│   ├── __init__.py              # Package file
+├── main.py                              # Main script
+├── google_sheets_llm_analyzer_package/  # Source code
+│   ├── __init__.py                      # Package file
 │   ├── config.py                # Configuration with Pydantic
 │   ├── google_sheets_client.py  # Google Sheets client
 │   ├── data_analyzer.py         # Data analysis

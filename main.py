@@ -19,20 +19,20 @@ from rich.progress import (
 )
 from rich.table import Table
 
-from src.config import (
+from google_sheets_llm_analyzer_package.config import (
     AppConfig,
     config,
 )
-from src.data_analyzer import (
+from google_sheets_llm_analyzer_package.data_analyzer import (
     AnalysisResult,
     DataAnalyzer,
 )
-from src.google_sheets_client import (
+from google_sheets_llm_analyzer_package.google_sheets_client import (
     CSVReader,
     GoogleSheetsClient,
     GoogleSheetsError,
 )
-from src.llm_processor import LLMProcessor
+from google_sheets_llm_analyzer_package.llm_processor import LLMProcessor
 
 console = Console()
 

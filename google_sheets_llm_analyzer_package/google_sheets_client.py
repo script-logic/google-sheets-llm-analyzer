@@ -8,7 +8,7 @@ from typing import Any
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-from src.config import config
+from google_sheets_llm_analyzer_package.config import config
 
 
 class GoogleSheetsError(Exception):
