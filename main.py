@@ -34,7 +34,28 @@ from src.google_sheets_client import (
 )
 from src.llm_processor import LLMProcessor
 
+
 console = Console()
+
+
+BANNER = "\n".join(
+    [
+        "🤖 Google Sheets LLM Analyzer",
+        "📊 Statistical Data Analysis",
+    ],
+)
+
+
+EPILOG = "\n".join(
+    [
+        "Usage examples:",
+        "  %(prog)s --api                # Google Sheets API analysis",
+        "  %(prog)s --api --llm          # API + LLM analysis",
+        "  %(prog)s --csv data.csv       # CSV file analysis",
+        "  %(prog)s --api --test         # Connection test only",
+        "  %(prog)s --api --llm --debug  # With debugging",
+    ]
+)
 
 
 PRIORITY_STYLES = {
@@ -51,24 +72,6 @@ PRIORITY_STYLES = {
         "bold green",
     ),
 }
-
-EPILOG = "\n".join(
-    [
-        "Usage examples:",
-        "  %(prog)s --api                # Google Sheets API analysis",
-        "  %(prog)s --api --llm          # API + LLM analysis",
-        "  %(prog)s --csv data.csv       # CSV file analysis",
-        "  %(prog)s --api --test         # Connection test only",
-        "  %(prog)s --api --llm --debug  # With debugging",
-    ]
-)
-
-BANNER = "\n".join(
-    [
-        "🤖 Google Sheets LLM Analyzer",
-        "📊 Statistical Data Analysis",
-    ],
-)
 
 
 def _create_config_info_table(current_config: AppConfig) -> Table:
@@ -487,6 +490,7 @@ def main():
 
     args = parser.parse_args()
 
+    # API connections test only mode
     if args.test:
         console.print(
             Panel(
@@ -499,24 +503,32 @@ def main():
 
         if args.api:
             console.print("[bold]Testing Google Sheets...[/bold]")
+
             try:
                 client = GoogleSheetsClient()
+
                 if client.test_connection():
                     console.print("[green]✅ Google Sheets: OK[/green]")
+
                 else:
                     console.print("[red]❌ Google Sheets: FAILED[/red]")
+
             except Exception as e:
                 console.print(f"[red]❌ Google Sheets: {e}[/red]")
 
         console.print("\n[bold]Testing LLM...[/bold]")
+
         try:
             llm_processor = LLMProcessor()
+
             if llm_processor.test_connection():
                 console.print("[green]✅ LLM: OK[/green]")
+
         except Exception as e:
             console.print(f"[red]❌ LLM: {e}[/red]")
 
         console.print("\n[green]✅ Testing completed[/green]")
+
         return
 
     # Main mode
@@ -526,6 +538,7 @@ def main():
             task,
         ):
             if args.api:
+                # Use table via API
                 try:
                     client = GoogleSheetsClient()
                     data = client.fetch_data()
@@ -557,7 +570,8 @@ def main():
                 Panel(
                     "[bold]📄 Raw Data[/bold]",
                     border_style="dim",
-                )
+                ),
+                end="\n\n",
             )
             for i, row in enumerate(data):
                 console.print(f"[dim]{i}:[/dim] {row}")
@@ -585,7 +599,6 @@ def main():
                     if args.debug:
                         console.print_exception()
 
-        # Display results
         console.print()
         print_statistics(
             result,
@@ -610,6 +623,7 @@ def main():
     except KeyboardInterrupt:
         console.print("\n[yellow]⚠️  Interrupted by user[/yellow]")
         sys.exit(130)
+
     except Exception as e:
         console.print(f"[red]❌ Critical error: {e}[/red]")
         if args.debug:

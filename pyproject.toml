@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "google-sheets-llm-analyzer"
-version = "1.0.0"
+version = "1.0.5"
 description = "LLM-integrated Google Sheets data processing via API and analysis toolkit"
 authors = ["script-logic <dev.scriptlogic@gmail.com>"]
 readme = "README.md"
