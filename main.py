@@ -19,7 +19,7 @@ from rich.progress import (
 )
 from rich.table import Table
 
-from config import (
+from src.config import (
     AppConfig,
     config,
 )
@@ -33,7 +33,6 @@ from src.google_sheets_client import (
     GoogleSheetsError,
 )
 from src.llm_processor import LLMProcessor
-
 
 console = Console()
 
@@ -570,13 +569,11 @@ def main():
                 Panel(
                     "[bold]📄 Raw Data[/bold]",
                     border_style="dim",
+                    expand=False,
                 ),
-                end="\n\n",
             )
             for i, row in enumerate(data):
                 console.print(f"[dim]{i}:[/dim] {row}")
-
-            console.print()
 
         # Analyze data statistics
         analyzer = DataAnalyzer(category_column=config.category_column)

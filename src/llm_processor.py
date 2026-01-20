@@ -15,7 +15,7 @@ from openai import (
     RateLimitError,
 )
 
-from config import config
+from src.config import config
 
 
 @dataclass
