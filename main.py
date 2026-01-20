@@ -14,20 +14,16 @@ from rich.progress import (
     TextColumn,
 )
 
-from google_sheets_llm_analyzer_package.config import (
+from google_sheets_llm_analyzer_package import (
     AppConfig,
     config,
-)
-from google_sheets_llm_analyzer_package.console_printer import ConsolePrinter
-from google_sheets_llm_analyzer_package.data_analyzer import (
+    ConsolePrinter,
     DataAnalyzer,
-)
-from google_sheets_llm_analyzer_package.google_sheets_client import (
     CSVReader,
     GoogleSheetsClient,
     GoogleSheetsError,
+    LLMProcessor,
 )
-from google_sheets_llm_analyzer_package.llm_processor import LLMProcessor
 
 EPILOG = "\n".join(
     [
